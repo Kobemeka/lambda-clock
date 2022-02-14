@@ -1,2 +1,6 @@
 # lambda-clock
-A terminal clock
+A digital terminal clock
+
+To run clock
+
+`python lambda-clock.py`
