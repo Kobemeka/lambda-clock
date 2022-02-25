@@ -2,6 +2,11 @@ import os
 from datetime import datetime
 import time
 
+fonts = {
+    "full-block": "\u2588",
+    "black-square":"\u25A0",
+}
+
 def clearConsole():
     # clear the console
     # if the system is windows use cls
@@ -23,7 +28,7 @@ def splitby5(s):
     # splits the string by 5 characters
     return [s[j:j+5] for j in range(0, len(s), 5)]
 
-def convef(n,empty = " ",full = "\u25A0"):
+def convef(n,empty = " ",full = fonts["full-block"]):
     # converts the string with ones and zeros to given characters    
     return n.replace("0",empty).replace("1",full)
 

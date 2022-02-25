@@ -11,7 +11,7 @@ def clock(ctime):
     # splitby5:
     # https://stackoverflow.com/a/9475538
 
-    return "\n".join(["  ".join(list(zip(*[map(''.join, zip(*[iter(bin(int('1'+characters[c],16))[6:].replace("0"," ").replace("1","\u25A0"))]*5)) for c in ctime]))[i]) for i in range(5)])
+    return "\n".join(["  ".join(list(zip(*[map(''.join, zip(*[iter(bin(int('1'+characters[c],16))[6:].replace("0"," ").replace("1","\u2588"))]*5)) for c in ctime]))[i]) for i in range(5)])
 
 
 if __name__ == "__main__":
