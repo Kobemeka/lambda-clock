@@ -54,19 +54,36 @@ def hsv2ansi(h,s,v):
 
     return f"\033[38;2;{int(r*255)};{int(g*255)};{int(b*255)}m"
 
-def gradient(clockstr,hue_start,hue_spread,saturation_start,saturation_spread):
+def gradient(clockstr,**kwargs):
     
-    # TODO: corner to corner gradient | circular gradient
-
+    # TODO: circular gradient
+    hue_start,hue_spread,saturation_start,saturation_spread = kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation_start"],kwargs["saturation_spread"]
     lines = clockstr.split("\n")
     rows = len(lines)
     cols = len(lines[0])
+    totalrc = cols + rows
 
     a = []
     for i,row in enumerate(lines):
         b = ""
         for j,c in enumerate(row):
-            b += f"{hsv2ansi(hue_start + j*hue_spread/cols, i*saturation_spread/rows + saturation_start, 1)}{c}{colors.Stop}"
+            irow = i/rows
+            jcol = j/cols
+            totalij = i + j
+
+            if kwargs["gradient-style"] == "horizontal":
+                h = hsv2ansi(hue_start + hue_spread*jcol, saturation_start + saturation_spread*irow, 1)
+
+            elif kwargs["gradient-style"] == "vertical":
+                h = hsv2ansi(hue_start + hue_spread*irow, saturation_start + saturation_spread*jcol, 1)
+
+            elif kwargs["gradient-style"] == "diagonal":
+                h = hsv2ansi(hue_start + totalij*hue_spread/totalrc, totalij*saturation_spread/totalrc + saturation_start, 1)
+            
+            elif kwargs["gradient-style"] == "reverse-diagonal":
+                h = hsv2ansi(hue_start + (totalrc - j + i)*hue_spread/totalrc, (totalrc - j + i)*saturation_spread/totalrc + saturation_start, 1)
+            
+            b += f"{h}{c}{colors.Stop}"
         a.append(b)
     
     return "\n".join(a)
@@ -112,7 +129,7 @@ def clock(ctime,**kwargs):
     elif style == "gradient":
         
         lines = [splitby5(convef(hex2cistr(hex(characters[c])),**kwargs)) for c in ctime]
-        ml = gradient(mergeLines(lines,spacing),kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation_start"],kwargs["saturation_spread"])
+        ml = gradient(mergeLines(lines,spacing),**kwargs)
         
     return ml
 
@@ -174,16 +191,17 @@ def align(cl, size, **kwargs):
 if __name__ == "__main__":
 
     clock_settings = {
-        "clock-mode": "ms",
-        "hue_start":random()*0.9,
+        "clock-mode": "s",
+        "hue_start":0,
         "hue_spread":0.1,
-        "saturation_start":0.7,
-        "saturation_spread":0.3,
+        "saturation_start":1,
+        "saturation_spread":0.0,
         "spacing": " ",
         "position": 5,
         "coloring": "gradient",
         "empty-character": " ",
         "full-character": fonts.fonts["full-block"],
+        "gradient-style": "diagonal",
     }
 
     try:
