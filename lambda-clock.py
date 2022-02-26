@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import time
 from colorsys import hsv_to_rgb
+from random import random
 
 import colors
 import fonts
@@ -54,6 +55,8 @@ def hsv2ansi(h,s,v):
     return f"\033[38;2;{int(r*255)};{int(g*255)};{int(b*255)}m"
 
 def gradient(clockstr,hue_start,hue_spread,saturation_start,saturation_spread):
+    
+    # TODO: corner to corner gradient | circular gradient
 
     lines = clockstr.split("\n")
     rows = len(lines)
@@ -76,9 +79,9 @@ def splitby5(s):
     # splits the string by 5 characters
     return [s[j:j+5] for j in range(0, len(s), 5)]
 
-def convef(n,empty = " ", full = fonts.fonts["full-block"]):
-    # converts the string with ones and zeros to given characters    
-    return n.replace("0",empty).replace("1",full)
+def convef(n,**kwargs):
+    # converts the string with ones and zeros to given characters
+    return n.replace("0",kwargs["empty-character"]).replace("1",kwargs["full-character"])
 
 def mergeLines(t,spacing):
     # merges the converted and splitted text lines by lines with spacing
@@ -93,32 +96,22 @@ def mergeLines(t,spacing):
     return rt
 
 def clock(ctime,**kwargs):
-    '''
-    actually we do this:
-
-    t = []
-    for c in ctime:
-        char = hex2cistr(hex(characters[c]))
-        conv = convef(char)
-        sp5 = splitby5(conv)
-        t.append(sp5)
-    '''
 
     # for every char in current time convert to string by hex2cistr
     # then convert them to empty - full chars
     # then split by 5
-    # colorize lines
     # then merge
+    # colorize lines (before merging or after merging)
     style = kwargs["coloring"]
     spacing = kwargs["spacing"]
     if style == "default":
 
-        lines = [colorize_characters(splitby5(convef(hex2cistr(hex(characters[c])))),colors.character_colors[c]) for c in ctime]
+        lines = [colorize_characters(splitby5(convef(hex2cistr(hex(characters[c])),**kwargs)),colors.character_colors[c]) for c in ctime]
         ml = mergeLines(lines,spacing)
 
     elif style == "gradient":
         
-        lines = [splitby5(convef(hex2cistr(hex(characters[c])))) for c in ctime]
+        lines = [splitby5(convef(hex2cistr(hex(characters[c])),**kwargs)) for c in ctime]
         ml = gradient(mergeLines(lines,spacing),kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation_start"],kwargs["saturation_spread"])
         
     return ml
@@ -129,10 +122,18 @@ def align(cl, size, **kwargs):
     # 4 5 6 
     # 7 8 9
     w = kwargs["position"]
-    spacing = kwargs["spacing"]
+    lenspacing = len(kwargs["spacing"])
 
     col, row = size
-    clock_row_length = 40 + 7 * len(spacing) # 8 (character) * 5 (width of character) + 7 (spacing) * length of the spacing string
+
+    if kwargs["clock-mode"] in ["seconds","s"]:
+
+        clock_row_length = 40 + 7 * lenspacing # 8 (character) * 5 (width of character) + 7 (spacing) * length of the spacing string
+
+    elif kwargs["clock-mode"] in ["microseconds","ms"]:
+
+        clock_row_length = 75 + 9 * lenspacing # 15 (character) * 5 (width of character) + 9 (spacing) * length of the spacing string
+
     if w == "default" or w == "1" or w == 1:
         w = "top-left"
     elif w == "2" or w == 2:
@@ -173,32 +174,39 @@ def align(cl, size, **kwargs):
 if __name__ == "__main__":
 
     clock_settings = {
-        "hue_start":0,
-        "hue_spread":1,
-        "saturation_start":1,
-        "saturation_spread":0,
-        "spacing": "  ",
+        "clock-mode": "ms",
+        "hue_start":random()*0.9,
+        "hue_spread":0.1,
+        "saturation_start":0.7,
+        "saturation_spread":0.3,
+        "spacing": " ",
         "position": 5,
         "coloring": "gradient",
+        "empty-character": " ",
+        "full-character": fonts.fonts["full-block"],
     }
 
     try:
 
+        clearConsole()
         while True:
 
-            clearConsole()
 
             tsize = os.get_terminal_size()
-            spacing = "  "
+            if clock_settings["clock-mode"] in ["seconds","s"]:
+                timestr = "%H:%M:%S"
+            elif clock_settings["clock-mode"] in ["microseconds","ms"]:
+                timestr = "%H:%M:%S:%f"
 
-            current_time = datetime.now().strftime("%H:%M:%S")
+            current_time = datetime.now().strftime(timestr)
 
             sclock = clock(current_time,**clock_settings)
             aclock = align(sclock,tsize,**clock_settings)
 
-            print(aclock)
+            print("\033[2J\033[?25l\033[0;0H" + aclock, flush=True)
 
-            time.sleep(1)
+            if clock_settings["clock-mode"] in ["seconds","s"]:
+                time.sleep(1)
 
     except KeyboardInterrupt:
 
