@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 import time
-from turtle import right
 
 import colors
 import fonts
