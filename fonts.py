@@ -1,4 +1,5 @@
 fonts = {
+    "empty": " ",
     "full-block": "\u2588",
     "black-square":"\u25A0",
     "medium-square":"\u25FC",

@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 from colorsys import hsv_to_rgb
 from random import random
+import argparse
 
 import colors
 import fonts
@@ -25,6 +26,7 @@ characters = {
     "9": 0xe8bc2e, # "01110\n10001\n01111\n00001\n01110",
     "0": 0xe8c62e, # "01110\n10001\n10001\n10001\n01110",
     ":": 0x20080, # "00000\n00100\n00000\n00100\n00000",
+    " ": 0x00000,
 }
 
 def clearConsole():
@@ -57,7 +59,7 @@ def hsv2ansi(h,s,v):
 def gradient(clockstr,**kwargs):
     
     # TODO: circular gradient
-    hue_start,hue_spread,saturation_start,saturation_spread = kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation_start"],kwargs["saturation_spread"]
+    hue_start,hue_spread,saturation_start,saturation_spread = kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation-start"],kwargs["saturation-spread"]
     lines = clockstr.split("\n")
     rows = len(lines)
     cols = len(lines[0])
@@ -123,6 +125,11 @@ def clock(ctime,**kwargs):
     spacing = kwargs["spacing"]
     if style == "default":
 
+        lines = [splitby5(convef(hex2cistr(hex(characters[c])),**kwargs)) for c in ctime]
+        ml = mergeLines(lines,spacing)
+        
+    elif style == "predefined":
+
         lines = [colorize_characters(splitby5(convef(hex2cistr(hex(characters[c])),**kwargs)),colors.character_colors[c]) for c in ctime]
         ml = mergeLines(lines,spacing)
 
@@ -134,22 +141,25 @@ def clock(ctime,**kwargs):
     return ml
 
 def align(cl, size, **kwargs):
-    # w:
-    # 1 2 3
-    # 4 5 6 
-    # 7 8 9
     w = kwargs["position"]
     lenspacing = len(kwargs["spacing"])
 
     col, row = size
 
-    if kwargs["clock-mode"] in ["seconds","s"]:
+    if kwargs["clock-format"] == "s":
 
-        clock_row_length = 40 + 7 * lenspacing # 8 (character) * 5 (width of character) + 7 (spacing) * length of the spacing string
+        clock_row_length = 40 + 7 * lenspacing
+    elif kwargs["clock-format"] == "ms":
 
-    elif kwargs["clock-mode"] in ["microseconds","ms"]:
+        clock_row_length = 75 + 9 * lenspacing
 
-        clock_row_length = 75 + 9 * lenspacing # 15 (character) * 5 (width of character) + 9 (spacing) * length of the spacing string
+    elif kwargs["clock-format"] == "m":
+
+        clock_row_length = 25 + 4 * lenspacing
+    
+    elif kwargs["clock-format"] == "ds":
+
+        clock_row_length = 95 + 18 * lenspacing
 
     if w == "default" or w == "1" or w == 1:
         w = "top-left"
@@ -189,19 +199,34 @@ def align(cl, size, **kwargs):
     return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Digital Clock Options")
+
+    parser.add_argument("-m","--format", type=str, default="s", help="format of the clock", choices=["m","s","ms","ds"])
+    parser.add_argument("-p","--position", default=5, help="position of the clock",choices=range(1,10))
+    parser.add_argument("-c","--coloring", type=str, default="gradient", help="how to color the clock",choices=["gradient","default"])
+    parser.add_argument("-s","--spacing", type=str, default="empty", help="spacing character for clock",choices=fonts.fonts.keys())
+    parser.add_argument("-e","--echar", type=str, default="empty", help="the empty cell character",choices=fonts.fonts.keys())
+    parser.add_argument("-f","--fchar", type=str, default="full-block", help="the full cell character",choices=fonts.fonts.keys())
+    parser.add_argument("--gstyle", type=str, default="horizontal", help="gradient style",choices=["horizontal","vertical","diagonal","reverse-diagonal"])
+    parser.add_argument("--hstart", type=float, default=0.0, help="hue start value for gradient")
+    parser.add_argument("--hspread", type=float, default=0.1, help="hue spread value for gradient")
+    parser.add_argument("--sstart", type=float, default=1.0, help="saturation start value for gradient")
+    parser.add_argument("--sspread", type=float, default=0.0, help="saturation spread value for gradient")
+    
+    args = parser.parse_args()
 
     clock_settings = {
-        "clock-mode": "s",
-        "hue_start":0,
-        "hue_spread":0.1,
-        "saturation_start":1,
-        "saturation_spread":0.0,
-        "spacing": " ",
-        "position": 5,
-        "coloring": "gradient",
-        "empty-character": " ",
-        "full-character": fonts.fonts["full-block"],
-        "gradient-style": "diagonal",
+        "clock-format": args.format,
+        "position": args.position,
+        "coloring": args.coloring,
+        "spacing": fonts.fonts[args.spacing],
+        "empty-character": fonts.fonts[args.echar],
+        "full-character": fonts.fonts[args.fchar],
+        "gradient-style": args.gstyle,
+        "hue_start": float(args.hstart),
+        "hue_spread": float(args.hspread),
+        "saturation-start": float(args.sstart),
+        "saturation-spread": float(args.sspread),
     }
 
     try:
@@ -211,22 +236,31 @@ if __name__ == "__main__":
 
 
             tsize = os.get_terminal_size()
-            if clock_settings["clock-mode"] in ["seconds","s"]:
+            if clock_settings["clock-format"] == "s":
                 timestr = "%H:%M:%S"
-            elif clock_settings["clock-mode"] in ["microseconds","ms"]:
+
+            elif clock_settings["clock-format"] == "ms":
                 timestr = "%H:%M:%S:%f"
+
+            elif clock_settings["clock-format"] == "m":
+                timestr = "%H:%M"
+
+            elif clock_settings["clock-format"] == "ds":
+                timestr = "%d:%m:%Y %H:%M:%S"
 
             current_time = datetime.now().strftime(timestr)
 
             sclock = clock(current_time,**clock_settings)
             aclock = align(sclock,tsize,**clock_settings)
 
-            print("\033[2J\033[?25l\033[0;0H" + aclock, flush=True)
+            print("\033[2J\033[?25l\033[0;0H" + aclock, flush=True) # clear screen + hide cursor + position cursor to 0, 0
 
-            if clock_settings["clock-mode"] in ["seconds","s"]:
+            if clock_settings["clock-format"] == "s":
                 time.sleep(1)
+            elif clock_settings["clock-format"] == "m":
+                time.sleep(60)
 
     except KeyboardInterrupt:
 
-        print('Clock is stopped!')
+        print('\033[?25hClock is stopped!') # show cursor
     
