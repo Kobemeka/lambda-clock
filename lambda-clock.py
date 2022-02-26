@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import time
+from turtle import right
 
 import colors
 import fonts
@@ -60,7 +61,7 @@ def convef(n,empty = " ", full = fonts.fonts["full-block"]):
     # converts the string with ones and zeros to given characters    
     return n.replace("0",empty).replace("1",full)
 
-def mergeLines(t,spacing = "  "):
+def mergeLines(t,spacing):
     # merges the converted and splitted text lines by lines with spacing
     # and joins with new line character (\n)
     
@@ -72,7 +73,7 @@ def mergeLines(t,spacing = "  "):
     rt = "\n".join([spacing.join(list(zip(*t))[i]) for i in range(5)])
     return rt
 
-def clock(ctime):
+def clock(ctime,spacing):
     '''
     actually we do this:
 
@@ -90,9 +91,67 @@ def clock(ctime):
     # colorize lines
     # then merge
 
-    t = [colorize_lines(splitby5(convef(hex2cistr(hex(characters[c])))),colors.character_colors[c]) for c in ctime]
-    ml = mergeLines(t)
+    lines = [colorize_lines(splitby5(convef(hex2cistr(hex(characters[c])))),colors.character_colors[c]) for c in ctime]
+    ml = mergeLines(lines,spacing)
     return ml
+
+def align(cl,size,spacing,w = "center"):
+    
+    col, row = size
+
+    if w == "center":
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int((col - clock_row_length) / 2) * " "
+        top_padding = int((row - 5)/2) * "\n"
+
+        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
+
+    elif w == "top-left" or w == "default":
+        return cl
+    
+    elif w == "top-right":
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int(col - clock_row_length) * " "
+
+        return "\n".join([left_padding + t for t in cl.split("\n")])
+    
+    elif w == "top-center":
+
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int((col - clock_row_length) / 2) * " "
+
+        return "\n".join([left_padding + t for t in cl.split("\n")])
+
+    elif w == "center-left":
+        top_padding = int((row - 5)/2) * "\n"
+
+        return top_padding + cl
+    
+    elif w == "center-right":
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int(col - clock_row_length) * " "
+        top_padding = int((row - 5)/2) * "\n"
+
+        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
+
+    elif w == "bottom-left":
+        top_padding = int(row - 5) * "\n"
+
+        return top_padding + cl
+    
+    elif w == "bottom-right":
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int(col - clock_row_length) * " "
+        top_padding = int(row - 5) * "\n"
+
+        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
+
+    elif w == "bottom-center":
+        clock_row_length = 8 * 5 + 7 * len(spacing)
+        left_padding = int((col - clock_row_length) / 2) * " "
+        top_padding = int(row - 5) * "\n"
+
+        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
 
 if __name__ == "__main__":
 
@@ -101,11 +160,20 @@ if __name__ == "__main__":
         while True:
 
             clearConsole()
-            current_time = datetime.now().strftime("%-H:%M:%S")
-            print(clock(current_time))
+
+            tsize = os.get_terminal_size()
+            spacing = "   "
+
+            current_time = datetime.now().strftime("%H:%M:%S")
+
+            sclock = clock(current_time,spacing)
+            aclock = align(sclock,tsize,spacing,"bottom-left")
+
+            print(aclock)
+
             time.sleep(1)
 
     except KeyboardInterrupt:
-        
+
         print('Clock is stopped!')
     
