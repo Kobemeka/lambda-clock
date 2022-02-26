@@ -1,16 +1,15 @@
 import os
 from datetime import datetime
 import time
+from colorsys import hsv_to_rgb
 
 import colors
 import fonts
 
 # TODO: Command line arguments
-# TODO: Align (center | left | right)
 # TODO: Date 
 # TODO: New fonts
 # TODO: New Colors
-# TODO: Gradient colorizing
 
 characters = {
     # hexadecimal numbers are equal to the numbers without \n in the comments
@@ -48,9 +47,30 @@ def colorize(text, color):
     # colorize the string
     return f"{colors.colors[color]}{text}{colors.Stop}"
 
-def colorize_lines(lines,color):
+def hsv2ansi(h,s,v):
+
+    r,g,b = hsv_to_rgb(h,s,v)
+
+    return f"\033[38;2;{int(r*255)};{int(g*255)};{int(b*255)}m"
+
+def gradient(clockstr,hue_start,hue_spread,saturation_start,saturation_spread):
+
+    lines = clockstr.split("\n")
+    rows = len(lines)
+    cols = len(lines[0])
+
+    a = []
+    for i,row in enumerate(lines):
+        b = ""
+        for j,c in enumerate(row):
+            b += f"{hsv2ansi(hue_start + j*hue_spread/cols, i*saturation_spread/rows + saturation_start, 1)}{c}{colors.Stop}"
+        a.append(b)
+    
+    return "\n".join(a)
+
+def colorize_characters(chars,color):
     # colorizes lines by given color (lines from splitby5)
-    return [colorize(i,color) for i in lines]
+    return [colorize(i,color) for i in chars]
 
 def splitby5(s):
     # splits the string by 5 characters
@@ -72,7 +92,7 @@ def mergeLines(t,spacing):
     rt = "\n".join([spacing.join(list(zip(*t))[i]) for i in range(5)])
     return rt
 
-def clock(ctime,spacing):
+def clock(ctime,**kwargs):
     '''
     actually we do this:
 
@@ -89,20 +109,30 @@ def clock(ctime,spacing):
     # then split by 5
     # colorize lines
     # then merge
+    style = kwargs["coloring"]
+    spacing = kwargs["spacing"]
+    if style == "default":
 
-    lines = [colorize_lines(splitby5(convef(hex2cistr(hex(characters[c])))),colors.character_colors[c]) for c in ctime]
-    ml = mergeLines(lines,spacing)
+        lines = [colorize_characters(splitby5(convef(hex2cistr(hex(characters[c])))),colors.character_colors[c]) for c in ctime]
+        ml = mergeLines(lines,spacing)
+
+    elif style == "gradient":
+        
+        lines = [splitby5(convef(hex2cistr(hex(characters[c])))) for c in ctime]
+        ml = gradient(mergeLines(lines,spacing),kwargs["hue_start"],kwargs["hue_spread"],kwargs["saturation_start"],kwargs["saturation_spread"])
+        
     return ml
 
-def align(cl, size, spacing, w="default"):
+def align(cl, size, **kwargs):
     # w:
     # 1 2 3
     # 4 5 6 
     # 7 8 9
+    w = kwargs["position"]
+    spacing = kwargs["spacing"]
 
     col, row = size
     clock_row_length = 40 + 7 * len(spacing) # 8 (character) * 5 (width of character) + 7 (spacing) * length of the spacing string
-
     if w == "default" or w == "1" or w == 1:
         w = "top-left"
     elif w == "2" or w == 2:
@@ -142,6 +172,16 @@ def align(cl, size, spacing, w="default"):
 
 if __name__ == "__main__":
 
+    clock_settings = {
+        "hue_start":0,
+        "hue_spread":1,
+        "saturation_start":1,
+        "saturation_spread":0,
+        "spacing": "  ",
+        "position": 5,
+        "coloring": "gradient",
+    }
+
     try:
 
         while True:
@@ -149,12 +189,12 @@ if __name__ == "__main__":
             clearConsole()
 
             tsize = os.get_terminal_size()
-            spacing = "   "
+            spacing = "  "
 
             current_time = datetime.now().strftime("%H:%M:%S")
 
-            sclock = clock(current_time,spacing)
-            aclock = align(sclock,tsize,spacing,5)
+            sclock = clock(current_time,**clock_settings)
+            aclock = align(sclock,tsize,**clock_settings)
 
             print(aclock)
 
