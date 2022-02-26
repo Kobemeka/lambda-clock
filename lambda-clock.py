@@ -95,63 +95,51 @@ def clock(ctime,spacing):
     ml = mergeLines(lines,spacing)
     return ml
 
-def align(cl,size,spacing,w = "center"):
-    
+def align(cl, size, spacing, w="default"):
+    # w:
+    # 1 2 3
+    # 4 5 6 
+    # 7 8 9
+
     col, row = size
+    clock_row_length = 40 + 7 * len(spacing) # 8 (character) * 5 (width of character) + 7 (spacing) * length of the spacing string
 
-    if w == "center":
-        clock_row_length = 8 * 5 + 7 * len(spacing)
-        left_padding = int((col - clock_row_length) / 2) * " "
+    if w == "default" or w == "1" or w == 1:
+        w = "top-left"
+    elif w == "2" or w == 2:
+        w = "top-center"
+    elif w == "3" or w == 3:
+        w = "top-right"
+    elif w == "4" or w == 4:
+        w = "center-left"
+    elif w == "center" or w == "5" or w == 5:
+        w = "center-center"
+    elif w == "6" or w == 6:
+        w = "center-right"
+    elif w == "7" or w == 7:
+        w = "bottom-left"
+    elif w == "8" or w == 8:
+        w = "bottom-center"
+    elif w == "9" or w == 9:
+        w = "bottom-right"
+
+    v,h = w.split("-")
+
+    if v == "top":
+        top_padding = ""
+    elif v == "center":
         top_padding = int((row - 5)/2) * "\n"
-
-        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
-
-    elif w == "top-left" or w == "default":
-        return cl
-    
-    elif w == "top-right":
-        clock_row_length = 8 * 5 + 7 * len(spacing)
-        left_padding = int(col - clock_row_length) * " "
-
-        return "\n".join([left_padding + t for t in cl.split("\n")])
-    
-    elif w == "top-center":
-
-        clock_row_length = 8 * 5 + 7 * len(spacing)
-        left_padding = int((col - clock_row_length) / 2) * " "
-
-        return "\n".join([left_padding + t for t in cl.split("\n")])
-
-    elif w == "center-left":
-        top_padding = int((row - 5)/2) * "\n"
-
-        return top_padding + cl
-    
-    elif w == "center-right":
-        clock_row_length = 8 * 5 + 7 * len(spacing)
-        left_padding = int(col - clock_row_length) * " "
-        top_padding = int((row - 5)/2) * "\n"
-
-        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
-
-    elif w == "bottom-left":
+    elif v == "bottom":
         top_padding = int(row - 5) * "\n"
 
-        return top_padding + cl
-    
-    elif w == "bottom-right":
-        clock_row_length = 8 * 5 + 7 * len(spacing)
-        left_padding = int(col - clock_row_length) * " "
-        top_padding = int(row - 5) * "\n"
-
-        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
-
-    elif w == "bottom-center":
-        clock_row_length = 8 * 5 + 7 * len(spacing)
+    if h == "left":
+        left_padding = ""
+    elif h == "center":
         left_padding = int((col - clock_row_length) / 2) * " "
-        top_padding = int(row - 5) * "\n"
+    elif h == "right":
+        left_padding = int(col - clock_row_length) * " "
 
-        return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
+    return top_padding + "\n".join([left_padding + t for t in cl.split("\n")])
 
 if __name__ == "__main__":
 
@@ -167,7 +155,7 @@ if __name__ == "__main__":
             current_time = datetime.now().strftime("%H:%M:%S")
 
             sclock = clock(current_time,spacing)
-            aclock = align(sclock,tsize,spacing,"bottom-left")
+            aclock = align(sclock,tsize,spacing,5)
 
             print(aclock)
 
